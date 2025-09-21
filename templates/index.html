@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Difusión de Gases</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .unit-select {
+            width: 120px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            margin-right: 10px;
+        }
+
+        .btn-danger {
+            background: #e53e3e;
+        }
+
+        .substance-card {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .substance-card:hover {
+            border-color: #cbd5e0;
+            transform: translateY(-2px);
+        }
+
+        .substance-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .substance-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .remove-btn {
+            background: #fed7d7;
+            color: #c53030;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .remove-btn:hover {
+            background: #feb2b2;
+            transform: scale(1.1);
+        }
+
+        .grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .grid-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .grid-3 {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .result-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .result-units {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .result-details {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .detail-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        .detail-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border-left: 4px solid #e53e3e;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-box {
+            background: #e6fffa;
+            border: 1px solid #81e6d9;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 4px solid #38b2ac;
+        }
+
+        .info-box h3 {
+            color: #2c7a7b;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .info-box p {
+            color: #2d3748;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .result-value {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Calculadora de Difusión de Gases</h1>
+            <p>Manuela Martinez, Ana Sofia Burgos, Sofia Flores, Lizeth Natalia Torres</p>
+        </header>
+
+        <div class="info-box">
+            <h3>Información sobre el método</h3>
+            <p><strong>Fórmula principal:</strong> D_AB = 0.001858T^(3/2)(1/M_A + 1/M_B)^(0.5)/(P×Ω_D×σ_AB²)</p>
+            <p><strong>Para mezclas multicomponente:</strong> D_Amix = 1/(Σ y'i/D_Ai), donde y'i = yi/(1-yA)</p>
+            <p><strong>Unidades resultantes:</strong> cm²/s</p>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-bottom: 25px; color: #2d3748;">Condiciones de Operación</h2>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>Temperatura</label>
+                    <div class="form-row">
+                        <input type="number" id="temperature" class="form-control" placeholder="25" step="0.1" required>
+                        <select id="temp_unit" class="form-control unit-select">
+                            <option value="C">°C</option>
+                            <option value="K">K</option>
+                            <option value="F">°F</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Presión</label>
+                    <div class="form-row">
+                        <input type="number" id="pressure" class="form-control" placeholder="1" step="0.001" required>
+                        <select id="pressure_unit" class="form-control unit-select">
+                            <option value="atm">atm</option>
+                            <option value="bar">bar</option>
+                            <option value="psi">psi</option>
+                            <option value="Pa">Pa</option>
+                            <option value="kPa">kPa</option>
+                            <option value="mmHg">mmHg</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2 style="color: #2d3748;">Sustancias</h2>
+                <button onclick="addSubstance()" class="btn">+ Agregar Sustancia</button>
+            </div>
+            
+            <div id="substances-container">
+                <!-- Las sustancias se agregarán dinámicamente aquí -->
+            </div>
+
+            <div class="form-group">
+                <label>Sustancia objetivo (A) para el cálculo</label>
+                <select id="target_substance" class="form-control" required>
+                    <option value="">Seleccionar sustancia objetivo</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <button onclick="calculateDiffusivity()" class="btn" style="padding: 15px 40px; font-size: 18px;">
+                Calcular Difusividad
+            </button>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Calculando difusividad...</p>
+        </div>
+
+        <div id="error" class="error-message" style="display: none;"></div>
+
+        <div id="result" style="display: none;">
+            <div class="card result-card">
+                <div class="result-value" id="diffusivity-value">-</div>
+                <div class="result-units">cm²/s</div>
+                <div class="result-details">
+                    <h3 style="margin-bottom: 15px;">Detalles del Cálculo</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Temperatura</div>
+                            <div class="detail-value" id="temp-detail">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Presión</div>
+                            <div class="detail-value" id="pressure-detail">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Sustancia Objetivo</div>
+                            <div class="detail-value" id="target-detail">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Tipo de Mezcla</div>
+                            <div class="detail-value" id="mixture-detail">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let substanceCount = 0;
+
+        // Agregar sustancia inicial al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            addSubstance();
+            addSubstance();
+        });
+
+        function addSubstance() {
+            substanceCount++;
+            const container = document.getElementById('substances-container');
+            
+            const substanceDiv = document.createElement('div');
+            substanceDiv.className = 'substance-card';
+            substanceDiv.id = `substance-${substanceCount}`;
+            
+            substanceDiv.innerHTML = `
+                <div class="substance-header">
+                    <div class="substance-title">Sustancia ${substanceCount}</div>
+                    <button onclick="removeSubstance(${substanceCount})" class="remove-btn" title="Eliminar sustancia">×</button>
+                </div>
+                
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" class="form-control substance-name" placeholder="Ej: Metano, Etano" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Masa Molecular (g/mol)</label>
+                        <input type="number" class="form-control substance-mass" placeholder="16.04" step="0.001" required>
+                    </div>
+                </div>
+                
+                <div class="grid grid-3">
+                    <div class="form-group">
+                        <label>Volumen Crítico (cm³/mol)</label>
+                        <input type="number" class="form-control substance-volume" placeholder="98.6" step="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Temperatura Crítica</label>
+                        <div class="form-row">
+                            <input type="number" class="form-control substance-temp" placeholder="190.6" step="0.1" required>
+                            <select class="form-control unit-select substance-temp-unit">
+                                <option value="K">K</option>
+                                <option value="C">°C</option>
+                                <option value="F">°F</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Proporción Molar (0-1)</label>
+                        <input type="number" class="form-control substance-proportion" placeholder="0.5" min="0" max="1" step="0.001" required>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(substanceDiv);
+            updateTargetSelect();
+        }
+
+        function removeSubstance(id) {
+            const substances = document.querySelectorAll('.substance-card');
+            if (substances.length <= 2) {
+                showError('Debe haber al menos 2 sustancias para calcular la difusividad.');
+                return;
+            }
+            
+            const element = document.getElementById(`substance-${id}`);
+            element.remove();
+            updateTargetSelect();
+        }
+
+        function updateTargetSelect() {
+            const select = document.getElementById('target_substance');
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">Seleccionar sustancia objetivo</option>';
+            
+            const substances = document.querySelectorAll('.substance-name');
+            substances.forEach((input, index) => {
+                if (input.value) {
+                    const option = document.createElement('option');
+                    option.value = input.value;
+                    option.textContent = input.value;
+                    select.appendChild(option);
+                }
+            });
+            
+            // Restaurar selección previa si existe
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        }
+
+        // Actualizar lista de sustancias objetivo cuando se modifica un nombre
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('substance-name')) {
+                updateTargetSelect();
+            }
+        });
+
+        function validateInputs() {
+            // Validar condiciones de operación
+            const temperature = parseFloat(document.getElementById('temperature').value);
+            const pressure = parseFloat(document.getElementById('pressure').value);
+            
+            if (!temperature || !pressure) {
+                throw new Error('Temperatura y presión son requeridas.');
+            }
+            
+            // Validar sustancias
+            const substances = [];
+            const substanceCards = document.querySelectorAll('.substance-card');
+            
+            if (substanceCards.length < 2) {
+                throw new Error('Debe haber al menos 2 sustancias.');
+            }
+            
+            let totalProportion = 0;
+            
+            substanceCards.forEach((card) => {
+                const name = card.querySelector('.substance-name').value.trim();
+                const mass = parseFloat(card.querySelector('.substance-mass').value);
+                const volume = parseFloat(card.querySelector('.substance-volume').value);
+                const temp = parseFloat(card.querySelector('.substance-temp').value);
+                const tempUnit = card.querySelector('.substance-temp-unit').value;
+                const proportion = parseFloat(card.querySelector('.substance-proportion').value);
+                
+                if (!name || !mass || !volume || !temp || isNaN(proportion)) {
+                    throw new Error(`Todos los campos son requeridos para la sustancia: ${name || 'Sin nombre'}`);
+                }
+                
+                if (proportion < 0 || proportion > 1) {
+                    throw new Error(`La proporción debe estar entre 0 y 1 para: ${name}`);
+                }
+                
+                totalProportion += proportion;
+                
+                substances.push({
+                    name: name,
+                    molecular_mass: mass,
+                    critical_volume: volume,
+                    critical_temperature: temp,
+                    temp_unit: tempUnit,
+                    proportion: proportion
+                });
+            });
+            
+            if (Math.abs(totalProportion - 1.0) > 0.001) {
+                throw new Error(`Las proporciones molares deben sumar 1.0 (actual: ${totalProportion.toFixed(3)})`);
+            }
+            
+            // Validar sustancia objetivo
+            const targetSubstance = document.getElementById('target_substance').value;
+            if (!targetSubstance) {
+                throw new Error('Debe seleccionar una sustancia objetivo.');
+            }
+            
+            const targetExists = substances.some(s => s.name === targetSubstance);
+            if (!targetExists) {
+                throw new Error('La sustancia objetivo debe existir en la lista de sustancias.');
+            }
+            
+            return substances;
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // Ocultar después de 5 segundos
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function displayResult(data) {
+            // Mostrar valor principal
+            const diffusivityValue = document.getElementById('diffusivity-value');
+            diffusivityValue.textContent = data.diffusivity.toExponential(4);
+            
+            // Mostrar detalles
+            document.getElementById('temp-detail').textContent = `${data.temperature_k.toFixed(2)} K`;
+            document.getElementById('pressure-detail').textContent = `${data.pressure_atm.toFixed(3)} atm`;
+            document.getElementById('target-detail').textContent = data.target_substance;
+            document.getElementById('mixture-detail').textContent = data.mixture_type;
+            
+            // Mostrar resultado
+            document.getElementById('result').style.display = 'block';
+            
+            // Scroll suave al resultado
+            document.getElementById('result').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+
+        async function calculateDiffusivity() {
+            try {
+                hideError();
+                showLoading();
+                
+                // Validar y recopilar datos
+                const substances = validateInputs();
+                
+                const data = {
+                    substances: substances,
+                    target_substance: document.getElementById('target_substance').value,
+                    temperature: parseFloat(document.getElementById('temperature').value),
+                    temp_unit: document.getElementById('temp_unit').value,
+                    pressure: parseFloat(document.getElementById('pressure').value),
+                    pressure_unit: document.getElementById('pressure_unit').value
+                };
+                
+                // Enviar request al backend
+                const response = await fetch('/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Error en el cálculo');
+                }
+                
+                displayResult(result);
+                
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Ejemplos predefinidos para facilitar testing
+        function loadExample(type) {
+            if (type === 'binary') {
+                // Ejemplo binario: Metano-Etano
+                clearSubstances();
+                addSubstance();
+                addSubstance();
+                
+                const cards = document.querySelectorAll('.substance-card');
+                
+                // Metano
+                cards[0].querySelector('.substance-name').value = 'Metano';
+                cards[0].querySelector('.substance-mass').value = '16.04';
+                cards[0].querySelector('.substance-volume').value = '98.6';
+                cards[0].querySelector('.substance-temp').value = '190.6';
+                cards[0].querySelector('.substance-temp-unit').value = 'K';
+                cards[0].querySelector('.substance-proportion').value = '0.5';
+                
+                // Etano
+                cards[1].querySelector('.substance-name').value = 'Etano';
+                cards[1].querySelector('.substance-mass').value = '30.07';
+                cards[1].querySelector('.substance-volume').value = '145.5';
+                cards[1].querySelector('.substance-temp').value = '305.3';
+                cards[1].querySelector('.substance-temp-unit').value = 'K';
+                cards[1].querySelector('.substance-proportion').value = '0.5';
+                
+                // Condiciones
+                document.getElementById('temperature').value = '25';
+                document.getElementById('temp_unit').value = 'C';
+                document.getElementById('pressure').value = '1';
+                document.getElementById('pressure_unit').value = 'atm';
+                
+                updateTargetSelect();
+                document.getElementById('target_substance').value = 'Metano';
+            }
+        }
+
+        function clearSubstances() {
+            document.getElementById('substances-container').innerHTML = '';
+            substanceCount = 0;
+            updateTargetSelect();
+        }
+
+        // Agregar botones de ejemplo
+        document.addEventListener('DOMContentLoaded', function() {
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.style.cssText = 'text-align: center; margin: 20px 0;';
+            buttonsContainer.innerHTML = `
+                <button onclick="loadExample('binary')" class="btn btn-secondary">
+                    Cargar Ejemplo: Metano-Etano
+                </button>
+                <button onclick="clearSubstances(); addSubstance(); addSubstance();" class="btn btn-secondary">
+                    Limpiar Todo
+                </button>
+            `;
+            
+            const calculateButton = document.querySelector('[onclick="calculateDiffusivity()"]').parentNode;
+            calculateButton.parentNode.insertBefore(buttonsContainer, calculateButton);
+        });
+
+        // Validación en tiempo real de proporciones
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('substance-proportion')) {
+                setTimeout(checkProportions, 100);
+            }
+        });
+
+        function checkProportions() {
+            const proportions = Array.from(document.querySelectorAll('.substance-proportion'))
+                .map(input => parseFloat(input.value) || 0);
+            
+            const total = proportions.reduce((sum, prop) => sum + prop, 0);
+            const proportionInputs = document.querySelectorAll('.substance-proportion');
+            
+            proportionInputs.forEach(input => {
+                if (Math.abs(total - 1.0) > 0.001) {
+                    input.style.borderColor = '#fed7d7';
+                    input.style.backgroundColor = '#fef5e7';
+                } else {
+                    input.style.borderColor = '#e2e8f0';
+                    input.style.backgroundColor = 'white';
+                }
+            });
+            
+            // Mostrar total actual
+            let totalDisplay = document.getElementById('proportion-total');
+            if (!totalDisplay) {
+                totalDisplay = document.createElement('div');
+                totalDisplay.id = 'proportion-total';
+                totalDisplay.style.cssText = 'text-align: center; margin-top: 10px; font-weight: 600;';
+                document.getElementById('substances-container').appendChild(totalDisplay);
+            }
+            
+            totalDisplay.innerHTML = `
+                <span style="color: ${Math.abs(total - 1.0) > 0.001 ? '#e53e3e' : '#38a169'};">
+                    Total proporciones: ${total.toFixed(3)} ${Math.abs(total - 1.0) > 0.001 ? '⚠️' : '✓'}
+                </span>
+            `;
+        }
+    </script>
+</body>
+</html>
