@@ -41,6 +41,37 @@
             opacity: 0.9;
         }
 
+        .navigation {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-btn.active {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            border-color: white;
+        }
+
         .card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -304,6 +335,11 @@
             .result-value {
                 font-size: 2rem;
             }
+
+            .navigation {
+                flex-direction: column;
+                align-items: center;
+            }
         }
     </style>
 </head>
@@ -313,6 +349,11 @@
             <h1>Calculadora de Difusión de Gases</h1>
             <p>Manuela Martinez, Ana Sofia Burgos, Sofia Flores, Lizeth Natalia Torres</p>
         </header>
+
+        <nav class="navigation">
+            <a href="/" class="nav-btn active">Difusión en Gases</a>
+            <a href="/liquids" class="nav-btn">Difusión en Líquidos</a>
+        </nav>
 
         <div class="info-box">
             <h3>Información sobre el método</h3>

@@ -1,12 +1,18 @@
 # ================================================================================================
-# CALCULADORA DE DIFUSIÓN DE GASES - BACKEND FLASK
+# CALCULADORA DE DIFUSIÓN DE GASES Y LÍQUIDOS - BACKEND FLASK
 # ================================================================================================
 # Este programa calcula coeficientes de difusión de gases siguiendo el método de Welty
 # "Fundamentals of Momentum, Heat and Mass Transfer"
+# Y también calcula difusividad en líquidos usando varias correlaciones
 # 
-# FÓRMULAS PRINCIPALES:
+# FÓRMULAS PRINCIPALES GASES:
 # - D_AB = 0.001858*T^(3/2)*(1/M_A + 1/M_B)^(0.5)/(P*Omega_D*sigma_AB^2)
 # - Para mezclas: D_Amix = 1/(sum(y'i/D_Ai)) donde y'i = yi/(1-yA)
+#
+# FÓRMULAS PRINCIPALES LÍQUIDOS:
+# - Wilke-Chang: D_AB = 7.4e-8 * (φ*M_B)^0.5 * T / (μ * V_A^0.6)
+# - Hayduk-Laudie: D_AB = 13.26e-5 * μ^-1.14 * V_A^-0.589
+# - Scheibel: D_AB = K * T / (μ_B * V_A^1/3)
 # ================================================================================================
 
 from flask import Flask, render_template, request, jsonify
@@ -16,7 +22,20 @@ import json
 app = Flask(__name__)
 
 # ================================================================================================
-# CLASE SUBSTANCE - REPRESENTA UNA SUSTANCIA QUÍMICA
+# TABLA DE VALORES PHI_B PARA SOLVENTES (LÍQUIDOS)
+# ================================================================================================
+PHI_B_TABLA = {
+    "agua": 2.26,
+    "metanol": 1.9,
+    "etanol": 1.5,
+    "benceno": 1.0,
+    "eter": 1.0,
+    "heptano": 1.0,
+    "otros": 1.0
+}
+
+# ================================================================================================
+# CLASE SUBSTANCE - REPRESENTA UNA SUSTANCIA QUÍMICA (GASES)
 # ================================================================================================
 class Substance():
     """
@@ -59,7 +78,7 @@ class Substance():
         return 0.841 * (self.critical_volume) ** (1/3)
 
 # ================================================================================================
-# CLASE BINARYMIXTURE - MANEJA CÁLCULOS PARA DOS SUSTANCIAS
+# CLASE BINARYMIXTURE - MANEJA CÁLCULOS PARA DOS SUSTANCIAS (GASES)
 # ================================================================================================
 class BinaryMixture():
     """
@@ -198,7 +217,7 @@ class BinaryMixture():
         return d_ab
 
 # ================================================================================================
-# CLASE MIXTURE - MANEJA CÁLCULOS PARA MEZCLAS MULTICOMPONENTE
+# CLASE MIXTURE - MANEJA CÁLCULOS PARA MEZCLAS MULTICOMPONENTE (GASES)
 # ================================================================================================
 class Mixture():
     """
@@ -242,14 +261,14 @@ class Mixture():
         
         # CASO 1: MEZCLA BINARIA (solo 2 sustancias)
         if len(self.substances) == 2:
-            print("🔄 Detectada mezcla binaria - usando cálculo directo")
+            print("Detectada mezcla binaria - usando cálculo directo")
             # Para mezcla binaria, crear objeto BinaryMixture y calcular directamente
             binary_mix = BinaryMixture(self.substances[0], self.substances[1], 
                                      self.temperature, self.pressure)
             return binary_mix.calculate_binary_diffusivity()
         
         # CASO 2: MEZCLA MULTICOMPONENTE (más de 2 sustancias)
-        print(f"🔄 Detectada mezcla multicomponente con {len(self.substances)} sustancias")
+        print(f"Detectada mezcla multicomponente con {len(self.substances)} sustancias")
         
         # Inicializar suma de términos 1/D_Ai ponderados
         sum_terms = 0
@@ -257,12 +276,12 @@ class Mixture():
         # Obtener fracción molar de la sustancia objetivo (yA)
         target_proportion = self.target_substance.proportion
         
-        print(f"📊 Sustancia objetivo: {self.target_substance.name} (fracción = {target_proportion})")
+        print(f"Sustancia objetivo: {self.target_substance.name} (fracción = {target_proportion})")
         
         # RECORRER TODAS LAS SUSTANCIAS EXCEPTO LA OBJETIVO
         for substance in self.substances:
             if substance.name != self.target_substance.name:
-                print(f"🧮 Procesando: {substance.name}")
+                print(f"Procesando: {substance.name}")
                 
                 # PASO 1: Calcular fracción molar corregida y'X
                 # y'X = yX / (1 - yA)
@@ -282,14 +301,114 @@ class Mixture():
                 sum_terms += term
                 print(f"   - Término y'/D: {term:.6e}")
         
-        print(f"📈 Suma total de términos: {sum_terms:.6e}")
+        print(f"Suma total de términos: {sum_terms:.6e}")
         
         # PASO 4: Calcular difusividad final como 1/suma
         # D_Amix = 1 / (suma de términos)
         result = 1 / sum_terms if sum_terms > 0 else 0
-        print(f"✅ Difusividad final en mezcla: {result:.6e} cm²/s")
+        print(f"Difusividad final en mezcla: {result:.6e} cm²/s")
         
         return result
+
+# ================================================================================================
+# FUNCIONES DE DIFUSIVIDAD EN LÍQUIDOS
+# ================================================================================================
+
+def calculate_Va_from_Vc(Vc):
+    """
+    Calcula volumen molar Va usando correlación de Tyn y Calus.
+    FÓRMULA: Va = 0.285 * (Vc^1.048)
+    """
+    return 0.285 * (Vc ** 1.048)
+
+def wilke_chang(T, mu, Va, M, phi):
+    """
+    Ecuación de Wilke-Chang para difusividad en líquidos.
+    D_AB = 7.4e-8 * (φ*M_B)^0.5 * T / (μ * V_A^0.6)
+    
+    Args:
+        T: Temperatura en K
+        mu: Viscosidad del solvente en cP
+        Va: Volumen molar del soluto en cm³/mol
+        M: Masa molecular del solvente en g/mol
+        phi: Factor de asociación del solvente
+    
+    Returns:
+        float: Difusividad en cm²/s
+    """
+    return 7.4e-8 * (phi * M)**0.5 * T / (mu * (Va**0.6))
+
+def hayduk_laudie(mu, Va):
+    """
+    Ecuación de Hayduk-Laudie para difusividad en líquidos.
+    D_AB = 13.26e-5 * μ^-1.14 * V_A^-0.589
+    
+    Args:
+        mu: Viscosidad del solvente en cP
+        Va: Volumen molar del soluto en cm³/mol
+    
+    Returns:
+        float: Difusividad en cm²/s
+    """
+    return 13.26e-5 * (mu**-1.14) * (Va**-0.589)
+
+def scheibel(T, muB, Va, Vb):
+    """
+    Ecuación de Scheibel para difusividad en líquidos.
+    D_AB = K * T / (μ_B * V_A^1/3)
+    
+    Donde K depende de la relación Va/Vb
+    
+    Args:
+        T: Temperatura en K
+        muB: Viscosidad del solvente en cP
+        Va: Volumen molar del soluto en cm³/mol
+        Vb: Volumen molar del solvente en cm³/mol
+    
+    Returns:
+        float: Difusividad en cm²/s
+    """
+    # Calcular la constante K según las condiciones
+    ratio = Va / Vb if Vb > 0 else float('inf')
+    
+    if Va < 2*Vb:
+        K = 18.9e-8
+    elif Va < 2.5*Vb:
+        K = 17.5e-8
+    else:
+        K = 8.2e-8 * (1 + (3 * Vb / Va)**(2/3))
+    
+    return K * T / (muB * Va**(1/3))
+
+def tyne_extrapolation(DAB_T2, T1, T2, Tc, deltaHv):
+    """
+    Extrapolación de difusividad usando método de Tyne.
+    D_AB(T1) = D_AB(T2) * ((Tc - T2)/(Tc - T1))^n
+    
+    Args:
+        DAB_T2: Difusividad conocida a temperatura T2 en cm²/s
+        T1: Temperatura objetivo en K
+        T2: Temperatura conocida en K
+        Tc: Temperatura crítica en K
+        deltaHv: Entalpía de vaporización en kJ/kmol
+    
+    Returns:
+        tuple: (Difusividad calculada, exponente n usado)
+    """
+    # Determinar el exponente n basado en deltaHv
+    if 7900 <= deltaHv < 30000:
+        n = 3
+    elif 30000 <= deltaHv < 39000:
+        n = 4
+    elif 39000 <= deltaHv < 46000:
+        n = 6
+    elif 46000 <= deltaHv < 50000:
+        n = 8
+    else:  # >= 50000
+        n = 10
+
+    D_AB_T1 = DAB_T2 * ((Tc - T2)/(Tc - T1))**n
+    return D_AB_T1, n
 
 # ================================================================================================
 # FUNCIONES DE CONVERSIÓN DE UNIDADES
@@ -360,17 +479,27 @@ def convert_pressure_to_atm(pressure, unit):
 @app.route('/')
 def index():
     """
-    Ruta principal - muestra la página web con el formulario.
+    Ruta principal - muestra la página web con el formulario para gases.
     
     Returns:
         str: HTML renderizado de la página principal
     """
     return render_template('index.html')
 
+@app.route('/liquids')
+def liquids():
+    """
+    Ruta para cálculo de difusividad en líquidos.
+    
+    Returns:
+        str: HTML renderizado de la página de líquidos
+    """
+    return render_template('index2.html')
+
 @app.route('/calculate', methods=['POST'])
 def calculate_diffusivity():
     """
-    Endpoint para calcular difusividad.
+    Endpoint para calcular difusividad en gases.
     
     Recibe datos JSON con:
     - substances: lista de sustancias con sus propiedades
@@ -382,11 +511,11 @@ def calculate_diffusivity():
         JSON: Resultado del cálculo o mensaje de error
     """
     try:
-        print("🚀 Iniciando cálculo de difusividad...")
+        print("Iniciando cálculo de difusividad en gases...")
         
         # PASO 1: RECIBIR Y EXTRAER DATOS DEL REQUEST
         data = request.json
-        print(f"📥 Datos recibidos: {len(data.get('substances', []))} sustancias")
+        print(f"Datos recibidos: {len(data.get('substances', []))} sustancias")
         
         # Extraer datos principales
         substances_data = data['substances']           # Lista de sustancias
@@ -396,16 +525,16 @@ def calculate_diffusivity():
         temperature = convert_temperature_to_kelvin(data['temperature'], data['temp_unit'])
         pressure = convert_pressure_to_atm(data['pressure'], data['pressure_unit'])
         
-        print(f"🌡️  Temperatura: {temperature:.2f} K")
-        print(f"📊 Presión: {pressure:.3f} atm")
-        print(f"🎯 Sustancia objetivo: {target_substance_name}")
+        print(f"Temperatura: {temperature:.2f} K")
+        print(f"Presión: {pressure:.3f} atm")
+        print(f"Sustancia objetivo: {target_substance_name}")
         
         # PASO 2: CREAR OBJETOS SUBSTANCE PARA CADA SUSTANCIA
         substances = []      # Lista de objetos Substance
         target_substance = None  # Objeto de la sustancia objetivo
         
         for i, sub_data in enumerate(substances_data):
-            print(f"🧪 Procesando sustancia {i+1}: {sub_data['name']}")
+            print(f"Procesando sustancia {i+1}: {sub_data['name']}")
             
             # Crear objeto Substance con datos convertidos
             substance = Substance(
@@ -425,32 +554,32 @@ def calculate_diffusivity():
             # Si es la sustancia objetivo, guardar referencia
             if substance.name == target_substance_name:
                 target_substance = substance
-                print(f"✅ Sustancia objetivo identificada: {substance.name}")
+                print(f"Sustancia objetivo identificada: {substance.name}")
         
         # PASO 3: VALIDACIONES DE DATOS
         
         # Verificar que se encontró la sustancia objetivo
         if not target_substance:
             error_msg = f'Sustancia objetivo "{target_substance_name}" no encontrada en la lista'
-            print(f"❌ Error: {error_msg}")
+            print(f"Error: {error_msg}")
             return jsonify({'error': error_msg}), 400
         
         # Verificar que las proporciones sumen 1.0
         total_proportion = sum(s.proportion for s in substances)
-        print(f"📊 Suma de proporciones: {total_proportion:.6f}")
+        print(f"Suma de proporciones: {total_proportion:.6f}")
         
         if abs(total_proportion - 1.0) > 0.001:  # Tolerancia de ±0.001
             error_msg = f'Las proporciones deben sumar 1.0 (actual: {total_proportion:.3f})'
-            print(f"❌ Error: {error_msg}")
+            print(f"Error: {error_msg}")
             return jsonify({'error': error_msg}), 400
         
         # PASO 4: CREAR MEZCLA Y CALCULAR DIFUSIVIDAD
-        print("🧮 Creando objeto Mixture y calculando difusividad...")
+        print("Creando objeto Mixture y calculando difusividad...")
         
         mixture = Mixture(target_substance, substances, temperature, pressure)
         diffusivity = mixture.calculate_mixture_diffusivity()
         
-        print(f"✅ Cálculo completado: {diffusivity:.6e} cm²/s")
+        print(f"Cálculo completado: {diffusivity:.6e} cm²/s")
         
         # PASO 5: PREPARAR RESPUESTA JSON
         result = {
@@ -462,13 +591,180 @@ def calculate_diffusivity():
             'mixture_type': 'binaria' if len(substances) == 2 else 'multicomponente'  # Tipo de mezcla
         }
         
-        print("📤 Enviando resultado al cliente...")
+        print("Enviando resultado al cliente...")
         return jsonify(result)
         
     except Exception as e:
         # MANEJO DE ERRORES
         error_msg = str(e)
-        print(f"💥 Error en el cálculo: {error_msg}")
+        print(f"Error en el cálculo: {error_msg}")
+        return jsonify({'error': error_msg}), 500
+
+@app.route('/calculate-liquid', methods=['POST'])
+def calculate_liquid_diffusivity():
+    """
+    Endpoint para calcular difusividad en líquidos.
+    
+    Recibe datos JSON con:
+    - method: método de cálculo ('wilke_chang', 'hayduk_laudie', 'scheibel', 'tyne')
+    - temperature, temp_unit: temperatura y unidad
+    - viscosity: viscosidad del solvente en cP
+    - molecular_mass_solvent: masa molecular del solvente en g/mol (para Wilke-Chang)
+    - solvent: nombre del solvente (para obtener phi_B)
+    - molar_volume: volumen molar del soluto en cm³/mol
+    - critical_volume: volumen crítico en cm³/mol (si no se tiene Va)
+    - solvent_molar_volume: volumen molar del solvente (para Scheibel)
+    - solvent_critical_volume: volumen crítico del solvente (para Scheibel)
+    - Para Tyne: DAB_T2, T1, T2, Tc, deltaHv
+    
+    Returns:
+        JSON: Resultado del cálculo o mensaje de error
+    """
+    try:
+        print("Iniciando cálculo de difusividad en líquidos...")
+        
+        # PASO 1: RECIBIR Y EXTRAER DATOS DEL REQUEST
+        data = request.json
+        method = data['method']
+        
+        print(f"Método seleccionado: {method}")
+        
+        # Convertir temperatura a Kelvin
+        temperature = convert_temperature_to_kelvin(data['temperature'], data['temp_unit'])
+        print(f"Temperatura: {temperature:.2f} K")
+        
+        # Variables comunes
+        result = {
+            'temperature_k': temperature,
+            'method': method,
+            'units': 'cm²/s'
+        }
+        
+        if method == 'wilke_chang':
+            # MÉTODO WILKE-CHANG
+            viscosity = data['viscosity']  # cP
+            molecular_mass_solvent = data['molecular_mass_solvent']  # g/mol
+            solvent = data['solvent'].lower()
+            
+            # Obtener factor de asociación phi_B
+            phi_B = PHI_B_TABLA.get(solvent, 1.0)
+            print(f"Factor de asociación φ_B para {solvent}: {phi_B}")
+            
+            # Obtener volumen molar del soluto
+            if 'molar_volume' in data and data['molar_volume']:
+                Va = data['molar_volume']
+                print(f"Usando volumen molar directo: {Va} cm³/mol")
+            elif 'critical_volume' in data and data['critical_volume']:
+                Va = calculate_Va_from_Vc(data['critical_volume'])
+                print(f"Calculado Va desde Vc usando Tyn-Calus: {Va:.2f} cm³/mol")
+            else:
+                raise ValueError("Se requiere volumen molar (Va) o volumen crítico (Vc) del soluto")
+            
+            # Calcular difusividad
+            diffusivity = wilke_chang(temperature, viscosity, Va, molecular_mass_solvent, phi_B)
+            
+            result.update({
+                'diffusivity': diffusivity,
+                'viscosity': viscosity,
+                'molecular_mass_solvent': molecular_mass_solvent,
+                'solvent': data['solvent'],
+                'phi_B': phi_B,
+                'Va': Va
+            })
+            
+        elif method == 'hayduk_laudie':
+            # MÉTODO HAYDUK-LAUDIE
+            viscosity = data['viscosity']  # cP
+            
+            # Obtener volumen molar del soluto
+            if 'molar_volume' in data and data['molar_volume']:
+                Va = data['molar_volume']
+                print(f"Usando volumen molar directo: {Va} cm³/mol")
+            elif 'critical_volume' in data and data['critical_volume']:
+                Va = calculate_Va_from_Vc(data['critical_volume'])
+                print(f"Calculado Va desde Vc usando Tyn-Calus: {Va:.2f} cm³/mol")
+            else:
+                raise ValueError("Se requiere volumen molar (Va) o volumen crítico (Vc) del soluto")
+            
+            # Calcular difusividad
+            diffusivity = hayduk_laudie(viscosity, Va)
+            
+            result.update({
+                'diffusivity': diffusivity,
+                'viscosity': viscosity,
+                'Va': Va
+            })
+            
+        elif method == 'scheibel':
+            # MÉTODO SCHEIBEL
+            viscosity = data['viscosity']  # cP
+            
+            # Obtener volumen molar del soluto
+            if 'molar_volume' in data and data['molar_volume']:
+                Va = data['molar_volume']
+                print(f"Usando volumen molar del soluto directo: {Va} cm³/mol")
+            elif 'critical_volume' in data and data['critical_volume']:
+                Va = calculate_Va_from_Vc(data['critical_volume'])
+                print(f"Calculado Va desde Vc usando Tyn-Calus: {Va:.2f} cm³/mol")
+            else:
+                raise ValueError("Se requiere volumen molar (Va) o volumen crítico (Vc) del soluto")
+            
+            # Obtener volumen molar del solvente
+            if 'solvent_molar_volume' in data and data['solvent_molar_volume']:
+                Vb = data['solvent_molar_volume']
+                print(f"Usando volumen molar del solvente directo: {Vb} cm³/mol")
+            elif 'solvent_critical_volume' in data and data['solvent_critical_volume']:
+                Vb = calculate_Va_from_Vc(data['solvent_critical_volume'])
+                print(f"Calculado Vb desde Vc del solvente usando Tyn-Calus: {Vb:.2f} cm³/mol")
+            else:
+                raise ValueError("Se requiere volumen molar (Vb) o volumen crítico (Vc) del solvente")
+            
+            # Calcular difusividad
+            diffusivity = scheibel(temperature, viscosity, Va, Vb)
+            
+            result.update({
+                'diffusivity': diffusivity,
+                'viscosity': viscosity,
+                'Va': Va,
+                'Vb': Vb
+            })
+            
+        elif method == 'tyne':
+            # MÉTODO TYNE (EXTRAPOLACIÓN)
+            DAB_T2 = data['DAB_T2']  # cm²/s
+            T1 = temperature  # K (temperatura objetivo)
+            T2 = convert_temperature_to_kelvin(data['T2'], data['T2_unit'])  # K (temperatura conocida)
+            Tc = convert_temperature_to_kelvin(data['Tc'], data['Tc_unit'])  # K (temperatura crítica)
+            deltaHv = data['deltaHv']  # kJ/kmol
+            
+            print(f"T1 (objetivo): {T1:.2f} K")
+            print(f"T2 (conocida): {T2:.2f} K")
+            print(f"Tc (crítica): {Tc:.2f} K")
+            print(f"ΔHv: {deltaHv} kJ/kmol")
+            
+            # Calcular difusividad y exponente
+            diffusivity, n = tyne_extrapolation(DAB_T2, T1, T2, Tc, deltaHv)
+            
+            result.update({
+                'diffusivity': diffusivity,
+                'DAB_T2': DAB_T2,
+                'T1': T1,
+                'T2': T2,
+                'Tc': Tc,
+                'deltaHv': deltaHv,
+                'exponent_n': n
+            })
+            
+        else:
+            raise ValueError(f"Método no reconocido: {method}")
+        
+        print(f"Cálculo completado: {diffusivity:.6e} cm²/s usando {method}")
+        return jsonify(result)
+        
+    except Exception as e:
+        # MANEJO DE ERRORES
+        error_msg = str(e)
+        print(f"Error en el cálculo: {error_msg}")
         return jsonify({'error': error_msg}), 500
 
 # ================================================================================================
@@ -484,8 +780,11 @@ if __name__ == '__main__':
     - Información detallada de errores en el navegador
     - Mensajes de debug en la consola
     """
-    print("🌟 Iniciando servidor Flask...")
-    print("🌐 La aplicación estará disponible en: http://localhost:5000")
-    print("🔧 Modo debug activado - el servidor se reiniciará automáticamente al detectar cambios")
+    print("Iniciando servidor Flask...")
+    print("La aplicación estará disponible en: http://localhost:5000")
+    print("Rutas disponibles:")
+    print("  - /          (Cálculo de difusividad en gases)")
+    print("  - /liquids   (Cálculo de difusividad en líquidos)")
+    print("Modo debug activado - el servidor se reiniciará automáticamente al detectar cambios")
     
     app.run(debug=True)

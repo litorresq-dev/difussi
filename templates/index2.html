@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Difusión en Líquidos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-btn.active {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            border-color: white;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .unit-select {
+            width: 120px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            margin-right: 10px;
+        }
+
+        .grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .grid-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .grid-3 {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .method-card {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .method-card:hover {
+            border-color: #cbd5e0;
+            transform: translateY(-2px);
+        }
+
+        .method-card.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .method-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .method-formula {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #4a5568;
+            background: #edf2f7;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .method-description {
+            font-size: 0.95rem;
+            color: #718096;
+            line-height: 1.4;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .result-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .result-units {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .result-details {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .detail-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        .detail-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border-left: 4px solid #e53e3e;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-box {
+            background: #e6fffa;
+            border: 1px solid #81e6d9;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 4px solid #38b2ac;
+        }
+
+        .info-box h3 {
+            color: #2c7a7b;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .info-box p {
+            color: #2d3748;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .result-value {
+                font-size: 2rem;
+            }
+
+            .navigation {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Calculadora de Difusión en Líquidos</h1>
+            <p>Manuela Martinez, Ana Sofia Burgos, Sofia Flores, Lizeth Natalia Torres</p>
+        </header>
+
+        <nav class="navigation">
+            <a href="/" class="nav-btn">Difusión en Gases</a>
+            <a href="/liquids" class="nav-btn active">Difusión en Líquidos</a>
+        </nav>
+
+        <div class="info-box">
+            <h3>Métodos de Cálculo Disponibles</h3>
+            <p><strong>Wilke-Chang:</strong> Para sistemas generales, requiere factor de asociación del solvente</p>
+            <p><strong>Hayduk-Laudie:</strong> Simplificado, solo requiere viscosidad y volumen molar del soluto</p>
+            <p><strong>Scheibel:</strong> Considera volúmenes molares del soluto y solvente</p>
+            <p><strong>Tyne:</strong> Extrapolación de difusividad conocida a otra temperatura</p>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-bottom: 25px; color: #2d3748;">Seleccionar Método de Cálculo</h2>
+            
+            <div class="grid grid-2">
+                <div class="method-card" onclick="selectMethod('wilke_chang')">
+                    <div class="method-title">Wilke-Chang</div>
+                    <div class="method-formula">D_AB = 7.4×10⁻⁸(φM_B)^0.5 T/(μV_A^0.6)</div>
+                    <div class="method-description">Método general para difusión en líquidos. Requiere factor de asociación del solvente.</div>
+                </div>
+                
+                <div class="method-card" onclick="selectMethod('hayduk_laudie')">
+                    <div class="method-title">Hayduk-Laudie</div>
+                    <div class="method-formula">D_AB = 13.26×10⁻⁵ μ^-1.14 V_A^-0.589</div>
+                    <div class="method-description">Método simplificado. Solo requiere viscosidad del solvente y volumen del soluto.</div>
+                </div>
+                
+                <div class="method-card" onclick="selectMethod('scheibel')">
+                    <div class="method-title">Scheibel</div>
+                    <div class="method-formula">D_AB = K T/(μ_B V_A^1/3)</div>
+                    <div class="method-description">Considera volúmenes molares del soluto y solvente. K depende de la relación V_A/V_B.</div>
+                </div>
+                
+                <div class="method-card" onclick="selectMethod('tyne')">
+                    <div class="method-title">Tyne (Extrapolación)</div>
+                    <div class="method-formula">D_AB(T1) = D_AB(T2)[(Tc-T2)/(Tc-T1)]^n</div>
+                    <div class="method-description">Extrapola difusividad conocida a otra temperatura usando temperatura crítica.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campos comunes -->
+        <div class="card">
+            <h2 style="margin-bottom: 25px; color: #2d3748;">Condiciones del Sistema</h2>
+            
+            <div class="form-group">
+                <label>Temperatura</label>
+                <div class="form-row">
+                    <input type="number" id="temperature" class="form-control" placeholder="25" step="0.1" required>
+                    <select id="temp_unit" class="form-control unit-select">
+                        <option value="C">°C</option>
+                        <option value="K">K</option>
+                        <option value="F">°F</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campos específicos para Wilke-Chang -->
+        <div id="wilke_chang_fields" class="card hidden">
+            <h2 style="margin-bottom: 25px; color: #2d3748;">Método Wilke-Chang</h2>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>Viscosidad del Solvente (cP)</label>
+                    <input type="number" id="wilke_viscosity" class="form-control" placeholder="1.0" step="0.001" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Masa Molecular del Solvente (g/mol)</label>
+                    <input type="number" id="wilke_molecular_mass" class="form-control" placeholder="18.015" step="0.001" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Solvente</label>
+                <select id="wilke_solvent" class="form-control" required>
+                    <option value="">Seleccionar solvente</option>
+                    <option value="agua">Agua (φ = 2.26)</option>
+                    <option value="metanol">Metanol (φ = 1.9)</option>
+                    <option value="etanol">Etanol (φ = 1.5)</option>
+                    <option value="benceno">Benceno (φ = 1.0)</option>
+                    <option value="eter">Éter (φ = 1.0)</option>
+                    <option value="heptano">Heptano (φ = 1.0)</option>
+                    <option value="otros">Otros (φ = 1.0)</option>
+                </select>
+            </div>
+            
+            <h3 style="margin: 25px 0 15px; color: #2d3748;">Volumen Molar del Soluto</h3>
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>Volumen Molar Directo (cm³/mol)</label>
+                    <input type="number" id="wilke_molar_volume" class="form-control" placeholder="Opcional" step="0.1">
+                </div>
+                
+                <div class="form-group">
+                    <label>O Volumen Crítico (cm³/mol)</label>
+                    <input type="number" id="wilke_critical_volume" class="form-control" placeholder="Para calcular Va" step="0.1">
+                </div>
+            </div>
+        </div>
+
+        <!-- Campos específicos para Hayduk-Laudie -->
+        <div id="hayduk_laudie_fields" class="card hidden">
+            <h2 style="margin-bottom: 25px; color: #2d3748;">Método Hayduk-Laudie</h2>
+            
+            <div class="form-group">
+                <label>Viscosidad del Solvente (cP)</label>
+                <input type="number" id="hayduk_viscosity" class="form-control" placeholder="1.0" step="0.001" required>
+            </div>
+            
+            <h3 style="margin: 25px 0 15px; color: #2d3748;">Volumen Molar del Soluto</h3>
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>Volumen Molar Directo (cm³/mol)</label>
+                    <input type="number" id="hayduk_molar_volume" class="form-control" placeholder="Opcional" step="0.1">
+                </div>
+                
+                <div class="form-group">
+                    <label>O Volumen Crítico (cm³/mol)</label>
+                    <input type="number" id="hayduk_critical_volume" class="form-control" placeholder="Para calcular Va" step="0.1">
+                </div>
+            </div>
+        </div>
+
+        <!-- Campos específicos para Scheibel -->
+        <div id="scheibel_fields" class="card hidden">
+            <h2 style="margin-bottom: 25px; color: #2d3748;">Método Scheibel</h2>
+            
+            <div class="form-group">
+                <label>Viscosidad del Solvente (cP)</label>
+                <input type="number" id="scheibel_viscosity" class="form-control" placeholder="1.0" step="0.001" required>
+            </div>
+            
+            <h3 style="margin: 25px 0 15px; color: #2d3748;">Volumen Molar del Soluto</h3>
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>Volumen Molar Directo (cm³/mol)</label>
+                    <input type="number" id="scheibel_molar_volume" class="form-control" placeholder="Opcional" step="0.1">
+                </div>
+                
+                <div class="form-group">
+                    <label>O Volumen Crítico (cm³/mol)</label>
+                    <input type="number" id="scheibel_critical_volume" class="form-control" placeholder="Para calcular Va" step="0.1">
+                </div>
+            </div>
+            
+            <h3 style="margin: 25px 0 15px; color: #2d3748;">Volumen Molar del Solvente</h3>
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>Volumen Molar Directo (cm³/mol)</label>
+                    <input type="number" id="scheibel_solvent_molar_volume" class="form-control" placeholder="Opcional" step="0.1">
+                </div>
+                
+                <div class="form-group">
+                    <label>O Volumen Crítico (cm³/mol)</label>
+                    <input type="number" id="scheibel_solvent_critical_volume" class="form-control" placeholder="Para calcular Vb" step="0.1">
+                </div>
+            </div>
+        </div>
+
+        <!-- Campos específicos para Tyne -->
+        <div id="tyne_fields" class="card hidden">
+            <h2 style="margin-bottom: 25px; color: #2d3748;">Método Tyne (Extrapolación)</h2>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>Difusividad Conocida D_AB (cm²/s)</label>
+                    <input type="number" id="tyne_DAB_T2" class="form-control" placeholder="1.2e-5" step="any" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Temperatura Conocida T2</label>
+                    <div class="form-row">
+                        <input type="number" id="tyne_T2" class="form-control" placeholder="30" step="0.1" required>
+                        <select id="tyne_T2_unit" class="form-control unit-select">
+                            <option value="C">°C</option>
+                            <option value="K">K</option>
+                            <option value="F">°F</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>Temperatura Crítica Tc</label>
+                    <div class="form-row">
+                        <input type="number" id="tyne_Tc" class="form-control" placeholder="647.1" step="0.1" required>
+                        <select id="tyne_Tc_unit" class="form-control unit-select">
+                            <option value="K">K</option>
+                            <option value="C">°C</option>
+                            <option value="F">°F</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Entalpía de Vaporización ΔHv (kJ/kmol)</label>
+                    <input type="number" id="tyne_deltaHv" class="form-control" placeholder="40660" step="1" required>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <button onclick="calculateLiquidDiffusivity()" class="btn" style="padding: 15px 40px; font-size: 18px;">
+                Calcular Difusividad
+            </button>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Calculando difusividad...</p>
+        </div>
+
+        <div id="error" class="error-message" style="display: none;"></div>
+
+        <div id="result" style="display: none;">
+            <div class="card result-card">
+                <div class="result-value" id="diffusivity-value">-</div>
+                <div class="result-units">cm²/s</div>
+                <div class="result-details">
+                    <h3 style="margin-bottom: 15px;">Detalles del Cálculo</h3>
+                    <div class="detail-grid" id="result-details-grid">
+                        <!-- Detalles se llenarán dinámicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedMethod = null;
+
+        function selectMethod(method) {
+            // Remover selección previa
+            document.querySelectorAll('.method-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Ocultar todos los campos específicos
+            document.querySelectorAll('[id$="_fields"]').forEach(field => {
+                field.classList.add('hidden');
+            });
+            
+            // Seleccionar nuevo método
+            document.querySelector(`[onclick="selectMethod('${method}')"]`).classList.add('selected');
+            selectedMethod = method;
+            
+            // Mostrar campos específicos del método
+            document.getElementById(`${method}_fields`).classList.remove('hidden');
+            
+            console.log(`Método seleccionado: ${method}`);
+        }
+
+        function validateInputs() {
+            if (!selectedMethod) {
+                throw new Error('Debe seleccionar un método de cálculo.');
+            }
+            
+            const temperature = parseFloat(document.getElementById('temperature').value);
+            if (!temperature) {
+                throw new Error('La temperatura es requerida.');
+            }
+            
+            const data = {
+                method: selectedMethod,
+                temperature: temperature,
+                temp_unit: document.getElementById('temp_unit').value
+            };
+            
+            if (selectedMethod === 'wilke_chang') {
+                const viscosity = parseFloat(document.getElementById('wilke_viscosity').value);
+                const molecularMass = parseFloat(document.getElementById('wilke_molecular_mass').value);
+                const solvent = document.getElementById('wilke_solvent').value;
+                const molarVolume = parseFloat(document.getElementById('wilke_molar_volume').value);
+                const criticalVolume = parseFloat(document.getElementById('wilke_critical_volume').value);
+                
+                if (!viscosity || !molecularMass || !solvent) {
+                    throw new Error('Viscosidad, masa molecular y solvente son requeridos para Wilke-Chang.');
+                }
+                
+                if (!molarVolume && !criticalVolume) {
+                    throw new Error('Se requiere volumen molar o volumen crítico del soluto.');
+                }
+                
+                Object.assign(data, {
+                    viscosity,
+                    molecular_mass_solvent: molecularMass,
+                    solvent,
+                    molar_volume: molarVolume || null,
+                    critical_volume: criticalVolume || null
+                });
+                
+            } else if (selectedMethod === 'hayduk_laudie') {
+                const viscosity = parseFloat(document.getElementById('hayduk_viscosity').value);
+                const molarVolume = parseFloat(document.getElementById('hayduk_molar_volume').value);
+                const criticalVolume = parseFloat(document.getElementById('hayduk_critical_volume').value);
+                
+                if (!viscosity) {
+                    throw new Error('La viscosidad es requerida para Hayduk-Laudie.');
+                }
+                
+                if (!molarVolume && !criticalVolume) {
+                    throw new Error('Se requiere volumen molar o volumen crítico del soluto.');
+                }
+                
+                Object.assign(data, {
+                    viscosity,
+                    molar_volume: molarVolume || null,
+                    critical_volume: criticalVolume || null
+                });
+                
+            } else if (selectedMethod === 'scheibel') {
+                const viscosity = parseFloat(document.getElementById('scheibel_viscosity').value);
+                const molarVolume = parseFloat(document.getElementById('scheibel_molar_volume').value);
+                const criticalVolume = parseFloat(document.getElementById('scheibel_critical_volume').value);
+                const solventMolarVolume = parseFloat(document.getElementById('scheibel_solvent_molar_volume').value);
+                const solventCriticalVolume = parseFloat(document.getElementById('scheibel_solvent_critical_volume').value);
+                
+                if (!viscosity) {
+                    throw new Error('La viscosidad es requerida para Scheibel.');
+                }
+                
+                if (!molarVolume && !criticalVolume) {
+                    throw new Error('Se requiere volumen molar o volumen crítico del soluto.');
+                }
+                
+                if (!solventMolarVolume && !solventCriticalVolume) {
+                    throw new Error('Se requiere volumen molar o volumen crítico del solvente.');
+                }
+                
+                Object.assign(data, {
+                    viscosity,
+                    molar_volume: molarVolume || null,
+                    critical_volume: criticalVolume || null,
+                    solvent_molar_volume: solventMolarVolume || null,
+                    solvent_critical_volume: solventCriticalVolume || null
+                });
+                
+            } else if (selectedMethod === 'tyne') {
+                const DAB_T2 = parseFloat(document.getElementById('tyne_DAB_T2').value);
+                const T2 = parseFloat(document.getElementById('tyne_T2').value);
+                const Tc = parseFloat(document.getElementById('tyne_Tc').value);
+                const deltaHv = parseFloat(document.getElementById('tyne_deltaHv').value);
+                
+                if (!DAB_T2 || !T2 || !Tc || !deltaHv) {
+                    throw new Error('Todos los campos son requeridos para el método Tyne.');
+                }
+                
+                Object.assign(data, {
+                    DAB_T2,
+                    T2,
+                    T2_unit: document.getElementById('tyne_T2_unit').value,
+                    Tc,
+                    Tc_unit: document.getElementById('tyne_Tc_unit').value,
+                    deltaHv
+                });
+            }
+            
+            return data;
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // Ocultar después de 5 segundos
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function displayResult(data) {
+            // Mostrar valor principal
+            const diffusivityValue = document.getElementById('diffusivity-value');
+            diffusivityValue.textContent = data.diffusivity.toExponential(4);
+            
+            // Limpiar detalles previos
+            const detailsGrid = document.getElementById('result-details-grid');
+            detailsGrid.innerHTML = '';
+            
+            // Detalles comunes
+            detailsGrid.innerHTML += `
+                <div class="detail-item">
+                    <div class="detail-label">Método</div>
+                    <div class="detail-value">${data.method.replace('_', '-').toUpperCase()}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Temperatura</div>
+                    <div class="detail-value">${data.temperature_k.toFixed(2)} K</div>
+                </div>
+            `;
+            
+            // Detalles específicos por método
+            if (data.method === 'wilke_chang') {
+                detailsGrid.innerHTML += `
+                    <div class="detail-item">
+                        <div class="detail-label">Solvente</div>
+                        <div class="detail-value">${data.solvent}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Factor φ_B</div>
+                        <div class="detail-value">${data.phi_B}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Viscosidad</div>
+                        <div class="detail-value">${data.viscosity} cP</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Va (soluto)</div>
+                        <div class="detail-value">${data.Va.toFixed(2)} cm³/mol</div>
+                    </div>
+                `;
+            } else if (data.method === 'hayduk_laudie') {
+                detailsGrid.innerHTML += `
+                    <div class="detail-item">
+                        <div class="detail-label">Viscosidad</div>
+                        <div class="detail-value">${data.viscosity} cP</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Va (soluto)</div>
+                        <div class="detail-value">${data.Va.toFixed(2)} cm³/mol</div>
+                    </div>
+                `;
+            } else if (data.method === 'scheibel') {
+                detailsGrid.innerHTML += `
+                    <div class="detail-item">
+                        <div class="detail-label">Viscosidad</div>
+                        <div class="detail-value">${data.viscosity} cP</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Va (soluto)</div>
+                        <div class="detail-value">${data.Va.toFixed(2)} cm³/mol</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Vb (solvente)</div>
+                        <div class="detail-value">${data.Vb.toFixed(2)} cm³/mol</div>
+                    </div>
+                `;
+            } else if (data.method === 'tyne') {
+                detailsGrid.innerHTML += `
+                    <div class="detail-item">
+                        <div class="detail-label">Exponente n</div>
+                        <div class="detail-value">${data.exponent_n}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">T2</div>
+                        <div class="detail-value">${data.T2.toFixed(2)} K</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Tc</div>
+                        <div class="detail-value">${data.Tc.toFixed(2)} K</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ΔHv</div>
+                        <div class="detail-value">${data.deltaHv} kJ/kmol</div>
+                    </div>
+                `;
+            }
+            
+            // Mostrar resultado
+            document.getElementById('result').style.display = 'block';
+            
+            // Scroll suave al resultado
+            document.getElementById('result').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+
+        async function calculateLiquidDiffusivity() {
+            try {
+                hideError();
+                showLoading();
+                
+                // Validar y recopilar datos
+                const data = validateInputs();
+                
+                console.log('Datos a enviar:', data);
+                
+                // Enviar request al backend
+                const response = await fetch('/calculate-liquid', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Error en el cálculo');
+                }
+                
+                console.log('Resultado recibido:', result);
+                displayResult(result);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Cargar ejemplos predefinidos
+        function loadExample(method) {
+            selectMethod(method);
+            
+            if (method === 'wilke_chang') {
+                // Ejemplo: Etanol en agua a 25°C
+                document.getElementById('temperature').value = '25';
+                document.getElementById('temp_unit').value = 'C';
+                document.getElementById('wilke_viscosity').value = '0.89';
+                document.getElementById('wilke_molecular_mass').value = '18.015';
+                document.getElementById('wilke_solvent').value = 'agua';
+                document.getElementById('wilke_molar_volume').value = '58.5';
+                
+            } else if (method === 'hayduk_laudie') {
+                // Ejemplo: Benceno en agua
+                document.getElementById('temperature').value = '25';
+                document.getElementById('temp_unit').value = 'C';
+                document.getElementById('hayduk_viscosity').value = '0.89';
+                document.getElementById('hayduk_molar_volume').value = '89.4';
+                
+            } else if (method === 'scheibel') {
+                // Ejemplo: CO2 en agua
+                document.getElementById('temperature').value = '25';
+                document.getElementById('temp_unit').value = 'C';
+                document.getElementById('scheibel_viscosity').value = '0.89';
+                document.getElementById('scheibel_molar_volume').value = '34.0';
+                document.getElementById('scheibel_solvent_molar_volume').value = '18.0';
+                
+            } else if (method === 'tyne') {
+                // Ejemplo: Extrapolación de difusividad
+                document.getElementById('temperature').value = '35';
+                document.getElementById('temp_unit').value = 'C';
+                document.getElementById('tyne_DAB_T2').value = '1.2e-5';
+                document.getElementById('tyne_T2').value = '25';
+                document.getElementById('tyne_T2_unit').value = 'C';
+                document.getElementById('tyne_Tc').value = '647.1';
+                document.getElementById('tyne_Tc_unit').value = 'K';
+                document.getElementById('tyne_deltaHv').value = '40660';
+            }
+        }
+
+        // Agregar botones de ejemplo
+        document.addEventListener('DOMContentLoaded', function() {
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.style.cssText = 'text-align: center; margin: 20px 0; display: none;';
+            buttonsContainer.id = 'examples-container';
+            buttonsContainer.innerHTML = `
+                <h3 style="color: #2d3748; margin-bottom: 15px;">Ejemplos Rápidos</h3>
+                <button onclick="loadExample('wilke_chang')" class="btn btn-secondary">
+                    Ejemplo Wilke-Chang
+                </button>
+                <button onclick="loadExample('hayduk_laudie')" class="btn btn-secondary">
+                    Ejemplo Hayduk-Laudie
+                </button>
+                <button onclick="loadExample('scheibel')" class="btn btn-secondary">
+                    Ejemplo Scheibel
+                </button>
+                <button onclick="loadExample('tyne')" class="btn btn-secondary">
+                    Ejemplo Tyne
+                </button>
+            `;
+            
+            const calculateButton = document.querySelector('[onclick="calculateLiquidDiffusivity()"]').parentNode;
+            calculateButton.parentNode.insertBefore(buttonsContainer, calculateButton);
+            
+            // Mostrar ejemplos cuando se selecciona un método
+            const observer = new MutationObserver(function(mutations) {
+                if (selectedMethod) {
+                    buttonsContainer.style.display = 'block';
+                } else {
+                    buttonsContainer.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
